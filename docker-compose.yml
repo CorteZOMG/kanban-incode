@@ -1,0 +1,25 @@
+services:
+  database:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: kanban
+    ports:
+      - "5432:5432"
+
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - database
+    environment:
+      DATABASE_URL: postgresql://postgres:password@database:5432/kanban?schema=public
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "8080:80"
