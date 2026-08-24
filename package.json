@@ -7,7 +7,7 @@
     "backend"
   ],
   "scripts": {
-    "prepare": "husky"
+    "prepare": "husky || true"
   },
   "lint-staged": {
     "frontend/**/*.{js,jsx,ts,tsx}": [
