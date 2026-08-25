@@ -16,6 +16,7 @@ jobs:
           node-version: '22'
       - run: npm ci
       - run: npm run lint --workspace=frontend
+      - run: npm run test --workspace=frontend
       - run: npm run build --workspace=frontend
 
   backend-checks:
@@ -28,4 +29,5 @@ jobs:
       - run: npm ci
       - run: npx prisma generate --schema=backend/prisma/schema.prisma
       - run: npm run lint --workspace=backend
+      - run: npm run test --workspace=backend
       - run: npm run build --workspace=backend
