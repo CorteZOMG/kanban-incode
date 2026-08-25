@@ -1,11 +1,18 @@
 import { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { fetchBoard, createBoard, deleteBoard } from '../store/boardSlice';
+import {
+  fetchBoard,
+  createBoard,
+  updateBoard,
+  deleteBoard,
+} from '../store/boardSlice';
 
 export const Header = () => {
   const [inputBoardId, setInputBoardId] = useState('');
   const [newBoardTitle, setNewBoardTitle] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -26,6 +33,22 @@ export const Header = () => {
     await dispatch(createBoard(newBoardTitle.trim()));
     setNewBoardTitle('');
     setIsCreating(false);
+  };
+
+  const handleStartRename = () => {
+    if (currentBoard) {
+      setEditedTitle(currentBoard.title);
+      setIsEditingTitle(true);
+    }
+  };
+
+  const handleSaveRename = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentBoard || !editedTitle.trim()) return;
+    await dispatch(
+      updateBoard({ id: currentBoard.id, title: editedTitle.trim() }),
+    );
+    setIsEditingTitle(false);
   };
 
   const handleDeleteBoard = async () => {
@@ -107,9 +130,46 @@ export const Header = () => {
       {currentBoard && (
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pt-3 border-t border-gray-100">
           <div className="flex items-center gap-3">
-            <h2 className="text-lg font-bold text-gray-900">
-              {currentBoard.title}
-            </h2>
+            {isEditingTitle ? (
+              <form
+                onSubmit={(e) => void handleSaveRename(e)}
+                className="flex items-center gap-2"
+              >
+                <input
+                  type="text"
+                  className="px-3 py-1 border border-gray-300 rounded outline-none text-sm font-bold text-gray-900 focus:border-gray-800"
+                  value={editedTitle}
+                  onChange={(e) => setEditedTitle(e.target.value)}
+                  autoFocus
+                  required
+                />
+                <button
+                  type="submit"
+                  className="px-2.5 py-1 bg-gray-900 text-white rounded text-xs font-medium hover:bg-gray-800 transition-colors cursor-pointer"
+                >
+                  Save
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsEditingTitle(false)}
+                  className="px-2.5 py-1 bg-gray-200 text-gray-700 rounded text-xs font-medium hover:bg-gray-300 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </form>
+            ) : (
+              <>
+                <h2 className="text-lg font-bold text-gray-900">
+                  {currentBoard.title}
+                </h2>
+                <button
+                  onClick={handleStartRename}
+                  className="px-2.5 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium hover:bg-gray-200 transition-colors cursor-pointer"
+                >
+                  Rename
+                </button>
+              </>
+            )}
 
             {/* Inline Delete Confirmation */}
             {showDeleteConfirm ? (

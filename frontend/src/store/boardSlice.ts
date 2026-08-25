@@ -59,6 +59,18 @@ export const createBoard = createAsyncThunk(
   },
 );
 
+export const updateBoard = createAsyncThunk(
+  'board/updateBoard',
+  async (payload: { id: string; title: string }) => {
+    const res = await fetch(`${API_BASE}/boards/${payload.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: payload.title }),
+    });
+    return (await res.json()) as Board;
+  },
+);
+
 export const deleteBoard = createAsyncThunk(
   'board/deleteBoard',
   async (id: string) => {
@@ -144,6 +156,12 @@ const boardSlice = createSlice({
           ...action.payload,
           cards: action.payload.cards || [],
         };
+      })
+      // Update Board
+      .addCase(updateBoard.fulfilled, (state, action: PayloadAction<Board>) => {
+        if (state.currentBoard) {
+          state.currentBoard.title = action.payload.title;
+        }
       })
       // Delete Board
       .addCase(deleteBoard.fulfilled, (state) => {
