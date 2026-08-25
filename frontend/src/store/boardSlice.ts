@@ -36,14 +36,46 @@ const initialState: BoardState = {
 const API_BASE =
   (import.meta.env.VITE_API_URL as string) || 'http://localhost:3000';
 
+async function handleResponse<T>(
+  res: Response,
+  fallbackErrorMsg: string,
+): Promise<T> {
+  if (!res.ok) {
+    if (res.status === 404) {
+      throw new Error(
+        'Board not found. Verify the Board ID (it has to be 32 character line lol).',
+      );
+    }
+    let errorJson: { message?: string | string[] } | null = null;
+    try {
+      errorJson = (await res.json()) as { message?: string | string[] };
+    } catch {
+      // Body was not JSON
+    }
+    const message = Array.isArray(errorJson?.message)
+      ? errorJson.message.join(', ')
+      : errorJson?.message;
+
+    throw new Error(message || fallbackErrorMsg);
+  }
+
+  try {
+    return (await res.json()) as T;
+  } catch {
+    throw new Error('Received invalid format from server.');
+  }
+}
+
 // Async Thunks for API Calls
 
 export const fetchBoard = createAsyncThunk(
   'board/fetchBoard',
   async (boardId: string) => {
     const res = await fetch(`${API_BASE}/boards/${boardId}`);
-    if (!res.ok) throw new Error('Board not found');
-    return (await res.json()) as Board;
+    return handleResponse<Board>(
+      res,
+      'Board not found. Verify the Board ID (it has to be 32 character line lol)',
+    );
   },
 );
 
@@ -55,7 +87,7 @@ export const createBoard = createAsyncThunk(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title }),
     });
-    return (await res.json()) as Board;
+    return handleResponse<Board>(res, 'Failed to create board.');
   },
 );
 
@@ -67,14 +99,17 @@ export const updateBoard = createAsyncThunk(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title: payload.title }),
     });
-    return (await res.json()) as Board;
+    return handleResponse<Board>(res, 'Failed to update board title.');
   },
 );
 
 export const deleteBoard = createAsyncThunk(
   'board/deleteBoard',
   async (id: string) => {
-    await fetch(`${API_BASE}/boards/${id}`, { method: 'DELETE' });
+    const res = await fetch(`${API_BASE}/boards/${id}`, { method: 'DELETE' });
+    if (!res.ok) {
+      throw new Error('Failed to delete board.');
+    }
     return id;
   },
 );
@@ -92,7 +127,7 @@ export const createCard = createAsyncThunk(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-    return (await res.json()) as Card;
+    return handleResponse<Card>(res, 'Failed to create card.');
   },
 );
 
@@ -107,14 +142,17 @@ export const updateCard = createAsyncThunk(
         description: payload.description,
       }),
     });
-    return (await res.json()) as Card;
+    return handleResponse<Card>(res, 'Failed to update card.');
   },
 );
 
 export const deleteCard = createAsyncThunk(
   'board/deleteCard',
   async (id: string) => {
-    await fetch(`${API_BASE}/cards/${id}`, { method: 'DELETE' });
+    const res = await fetch(`${API_BASE}/cards/${id}`, { method: 'DELETE' });
+    if (!res.ok) {
+      throw new Error('Failed to delete card.');
+    }
     return id;
   },
 );
@@ -127,7 +165,7 @@ export const moveCard = createAsyncThunk(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: payload.status, order: payload.order }),
     });
-    return (await res.json()) as Card;
+    return handleResponse<Card>(res, 'Failed to move card.');
   },
 );
 
