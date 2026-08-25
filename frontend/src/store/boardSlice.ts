@@ -59,6 +59,14 @@ export const createBoard = createAsyncThunk(
   },
 );
 
+export const deleteBoard = createAsyncThunk(
+  'board/deleteBoard',
+  async (id: string) => {
+    await fetch(`${API_BASE}/boards/${id}`, { method: 'DELETE' });
+    return id;
+  },
+);
+
 export const createCard = createAsyncThunk(
   'board/createCard',
   async (payload: {
@@ -132,7 +140,14 @@ const boardSlice = createSlice({
       })
       // Create Board
       .addCase(createBoard.fulfilled, (state, action: PayloadAction<Board>) => {
-        state.currentBoard = action.payload;
+        state.currentBoard = {
+          ...action.payload,
+          cards: action.payload.cards || [],
+        };
+      })
+      // Delete Board
+      .addCase(deleteBoard.fulfilled, (state) => {
+        state.currentBoard = null;
       })
       // Create Card
       .addCase(createCard.fulfilled, (state, action: PayloadAction<Card>) => {
