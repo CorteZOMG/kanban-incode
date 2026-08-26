@@ -1,15 +1,28 @@
 import { useState } from 'react';
-import { type Card, updateCard, deleteCard } from '../store/boardSlice';
+import {
+  type Card,
+  type ColumnStatus,
+  updateCard,
+  deleteCard,
+  moveCard,
+} from '../store/boardSlice';
 import { useAppDispatch } from '../store/hooks';
 
 interface CardItemProps {
   card: Card;
+  index: number;
+  status: ColumnStatus;
 }
 
-export const CardItem = ({ card }: CardItemProps) => {
+export const CardItem = ({ card, index, status }: CardItemProps) => {
   const dispatch = useAppDispatch();
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [dropPosition, setDropPosition] = useState<'above' | 'below' | null>(
+    null,
+  );
+  const [isDraggingSelf, setIsDraggingSelf] = useState(false);
+
   const [title, setTitle] = useState(card.title);
   const [description, setDescription] = useState(card.description || '');
 
@@ -32,6 +45,50 @@ export const CardItem = ({ card }: CardItemProps) => {
 
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData('text/plain', card.id);
+    setIsDraggingSelf(true);
+  };
+
+  const handleDragEnd = () => {
+    setIsDraggingSelf(false);
+    setDropPosition(null);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const offsetY = e.clientY - rect.top;
+    if (offsetY < rect.height / 2) {
+      setDropPosition('above');
+    } else {
+      setDropPosition('below');
+    }
+  };
+
+  const handleDragLeave = () => {
+    setDropPosition(null);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const draggedCardId = e.dataTransfer.getData('text/plain');
+    const position = dropPosition;
+    setDropPosition(null);
+
+    if (!draggedCardId || draggedCardId === card.id) return;
+
+    const targetOrder = position === 'below' ? index + 1 : index;
+
+    void dispatch(
+      moveCard({
+        id: draggedCardId,
+        status,
+        order: targetOrder,
+      }),
+    );
   };
 
   if (isEditing) {
@@ -77,7 +134,19 @@ export const CardItem = ({ card }: CardItemProps) => {
     <div
       draggable
       onDragStart={handleDragStart}
-      className="group relative p-3.5 bg-white border border-slate-200/90 rounded-lg shadow-xs hover:shadow-md hover:border-slate-300 transition-all cursor-grab active:cursor-grabbing flex flex-col gap-1.5"
+      onDragEnd={handleDragEnd}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      className={`group relative p-3.5 bg-white border rounded-lg shadow-xs hover:shadow-md transition-all cursor-grab active:cursor-grabbing flex flex-col gap-1.5 ${
+        isDraggingSelf ? 'opacity-40 scale-95' : 'opacity-100'
+      } ${
+        dropPosition === 'above'
+          ? 'border-t-4 border-t-slate-800 border-x-slate-200 border-b-slate-200'
+          : dropPosition === 'below'
+            ? 'border-b-4 border-b-slate-800 border-x-slate-200 border-t-slate-200'
+            : 'border-slate-200/90 hover:border-slate-300'
+      }`}
     >
       <div className="flex justify-between items-start gap-2">
         <h4 className="font-semibold text-sm text-slate-900 break-words leading-snug">

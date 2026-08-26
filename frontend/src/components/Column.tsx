@@ -20,6 +20,9 @@ export const Column = ({ title, status, cards, boardId }: ColumnProps) => {
   const [isAdding, setIsAdding] = useState(false);
   const [cardTitle, setCardTitle] = useState('');
   const [cardDescription, setCardDescription] = useState('');
+  const [isOver, setIsOver] = useState(false);
+
+  const sortedCards = [...cards].sort((a, b) => a.order - b.order);
 
   const handleAddCard = (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,10 +44,16 @@ export const Column = ({ title, status, cards, boardId }: ColumnProps) => {
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
+    setIsOver(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsOver(false);
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    setIsOver(false);
     const cardId = e.dataTransfer.getData('text/plain');
     if (!cardId) return;
 
@@ -52,7 +61,7 @@ export const Column = ({ title, status, cards, boardId }: ColumnProps) => {
       moveCard({
         id: cardId,
         status,
-        order: cards.length,
+        order: sortedCards.length,
       }),
     );
   };
@@ -60,8 +69,13 @@ export const Column = ({ title, status, cards, boardId }: ColumnProps) => {
   return (
     <div
       onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className="flex-1 bg-slate-50/80 border border-slate-200/90 rounded-xl p-4 flex flex-col gap-3 min-h-[550px] shadow-xs"
+      className={`flex-1 rounded-xl p-4 flex flex-col gap-3 min-h-[550px] shadow-xs transition-all border ${
+        isOver
+          ? 'bg-slate-100/90 border-slate-400 ring-2 ring-slate-400/20'
+          : 'bg-slate-50/80 border-slate-200/90'
+      }`}
     >
       {/* Column Title */}
       <div className="flex justify-between items-center pb-2.5 border-b border-slate-200">
@@ -69,14 +83,14 @@ export const Column = ({ title, status, cards, boardId }: ColumnProps) => {
           {title}
         </h3>
         <span className="bg-slate-200 text-slate-700 text-xs px-2.5 py-0.5 rounded-full font-semibold">
-          {cards.length}
+          {sortedCards.length}
         </span>
       </div>
 
       {/* Cards List */}
       <div className="flex flex-col gap-2.5 flex-1 overflow-y-auto">
-        {cards.map((card) => (
-          <CardItem key={card.id} card={card} />
+        {sortedCards.map((card, idx) => (
+          <CardItem key={card.id} card={card} index={idx} status={status} />
         ))}
       </div>
 
@@ -105,14 +119,14 @@ export const Column = ({ title, status, cards, boardId }: ColumnProps) => {
           <div className="flex justify-end gap-2 mt-1">
             <button
               type="button"
-              className="px-3 py-1 text-xs border border-slate-300 rounded-md hover:bg-slate-50 transition-colors"
+              className="px-3 py-1 text-xs border border-slate-300 rounded-md hover:bg-slate-50 transition-colors cursor-pointer"
               onClick={() => setIsAdding(false)}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-3 py-1 text-xs font-semibold bg-slate-900 text-white rounded-md hover:bg-slate-800 transition-colors"
+              className="px-3 py-1 text-xs font-semibold bg-slate-900 text-white rounded-md hover:bg-slate-800 transition-colors cursor-pointer"
             >
               Add Card
             </button>
