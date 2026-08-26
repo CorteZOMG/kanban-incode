@@ -120,11 +120,7 @@ export const Header = () => {
       )}
 
       {/* Error Message */}
-      {error && (
-        <div className="p-3 bg-red-50 text-red-700 border border-red-200 rounded-lg text-sm font-medium">
-          {error}
-        </div>
-      )}
+      {error && <p className="text-xs font-medium text-red-600">{error}</p>}
 
       {/* Current Active Board Bar */}
       {currentBoard && (

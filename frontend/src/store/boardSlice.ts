@@ -42,15 +42,16 @@ async function handleResponse<T>(
 ): Promise<T> {
   if (!res.ok) {
     if (res.status === 404) {
-      throw new Error(
-        'Board not found. Verify the Board ID (it has to be 32 character line lol).',
-      );
+      throw new Error('Board not found. Please verify the Board ID.');
+    }
+    if (res.status === 400) {
+      throw new Error('Invalid Board ID format.');
     }
     let errorJson: { message?: string | string[] } | null = null;
     try {
       errorJson = (await res.json()) as { message?: string | string[] };
     } catch {
-      // Body was not JSON
+      // Non-JSON body
     }
     const message = Array.isArray(errorJson?.message)
       ? errorJson.message.join(', ')
@@ -62,7 +63,7 @@ async function handleResponse<T>(
   try {
     return (await res.json()) as T;
   } catch {
-    throw new Error('Received invalid format from server.');
+    throw new Error(fallbackErrorMsg);
   }
 }
 
@@ -74,7 +75,7 @@ export const fetchBoard = createAsyncThunk(
     const res = await fetch(`${API_BASE}/boards/${boardId}`);
     return handleResponse<Board>(
       res,
-      'Board not found. Verify the Board ID (it has to be 32 character line lol)',
+      'Board not found. Please verify the Board ID.',
     );
   },
 );
@@ -172,7 +173,11 @@ export const moveCard = createAsyncThunk(
 const boardSlice = createSlice({
   name: 'board',
   initialState,
-  reducers: {},
+  reducers: {
+    clearError: (state) => {
+      state.error = null;
+    },
+  },
   extraReducers: (builder) => {
     builder
       // Fetch Board
@@ -186,7 +191,7 @@ const boardSlice = createSlice({
       })
       .addCase(fetchBoard.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Failed to load board';
+        state.error = action.error.message || 'Failed to load board.';
       })
       // Create Board
       .addCase(createBoard.fulfilled, (state, action: PayloadAction<Board>) => {
@@ -238,10 +243,12 @@ const boardSlice = createSlice({
           );
           if (index !== -1) {
             state.currentBoard.cards[index] = action.payload;
+            state.currentBoard.cards.sort((a, b) => a.order - b.order);
           }
         }
       });
   },
 });
 
+export const { clearError } = boardSlice.actions;
 export default boardSlice.reducer;
