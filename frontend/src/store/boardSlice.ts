@@ -33,8 +33,9 @@ const initialState: BoardState = {
   error: null,
 };
 
-const API_BASE =
+const rawApiBase =
   (import.meta.env.VITE_API_URL as string) || 'http://localhost:3000';
+const API_BASE = rawApiBase.replace(/\/+$/, '');
 
 async function handleResponse<T>(
   res: Response,
